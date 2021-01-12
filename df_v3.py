@@ -59,12 +59,12 @@ X_train, X_test, y_train, y_test = train_test_split(df, Y, random_state=42) #str
 #y_train=y_train[y_train < 520000]
 
     
-#housing_xgb = xgb.XGBRegressor(objective='reg:linear', missing=False, 
-#                               seed=42,subsample=0.7)
+housing_xgb = xgb.XGBRegressor(objective='reg:linear', missing=False, n_estimators=1000,
+                               seed=42,subsample=0.7,reg_alpha=0.00006)
 
-housing_xgb = xgb.XGBRegressor(objective='reg:linear',max_depth=3,missing=False, seed=42,
-                               learning_rate = 0.01,n_estimators=3460, 
-                               reg_alpha=0.00006,subsample=0.7)
+# housing_xgb = xgb.XGBRegressor(objective='reg:linear',max_depth=3,missing=False, seed=42,
+#                                learning_rate = 0.01,n_estimators=3460, 
+#                                reg_alpha=0.00006,subsample=0.7)
 # first pass
 housing_xgb.fit(X_train, y_train,verbose=True)
 
@@ -110,7 +110,7 @@ for i in range(1,len(import_cols)):
     
 sns.scatterplot(data=rmse_df,x='Run',y='Rmse',color='blue')
 sns.set_style("white")
-plt.ylim(.134, .14)
+plt.ylim(.134, .16)
 
 #3rd pass
 rmse_df2 = pd.DataFrame()
@@ -132,33 +132,29 @@ for i in range(1,70):
     
 sns.scatterplot(data=rmse_df2,x='Run',y='Rmse',color='blue')
 sns.set_style("white")
-plt.ylim(.134, .14)
+plt.ylim(.11, .14)
 
 
 # subset of top 70 variables
 import_cols_70subset =import_cols[0:70]
 
- param_grid = { 
-      'max_depth': [3, 4, 5],
-      'learning_rate': [0.5, 0.2, 0.1],
-      'gamma': [0, 0.25, 1.0],
-      'reg_lambda': [0, 1.0, 10.0]
-      }
+param_grid = { 
+    'max_depth': [3],
+    'learning_rate': [0.0001,0.001],
+ #    'gamma': [0, 1.0,5.0]
+    'subsample': [.5,0.7,.9],
+    'reg_alpha': [0.0001,0, 1.0],
+    'n_estimators': [100,1000,2000,3000,4000]
+    }
 # pass 3 
-  param_grid = { 
-      'max_depth': [3],
-      'learning_rate': [0.001,0.01,0.1],
-      'subsample': [.5,0.7,.9],
-      'n_estimators': [100,1000,3500]
-      }
+
 
 optimal_params = GridSearchCV(
     estimator=xgb.XGBRegressor(objective='reg:linear', 
                                 seed=42,
-                                base_score=0.5,
-                                colsample_bytree=1),
+                                base_score=0.5),
     param_grid=param_grid,
-    scoring='neg_root_mean_squared_error', ## see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+    scoring='neg_mean_squared_log_error', ## see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
     verbose=True, # NOTE: If you want to see what Grid Search is doing, set verbose=2
     n_jobs = 10,
     cv = 5
@@ -171,7 +167,7 @@ optimal_params = GridSearchCV(
     estimator=xgb.housing_xgb = xgb.XGBRegressor(objective='reg:linear', seed=42,
                                reg_alpha=0.00006,subsample=0.7,
     param_grid=housing_xgb.get_params,
-    scoring='neg_mean_squared_log_error', ## see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+    #scoring='neg_mean_squared_log_error', ## see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
     verbose=True, # NOTE: If you want to see what Grid Search is doing, set verbose=2
     n_jobs = 10,
     cv = 3
@@ -193,7 +189,9 @@ bst = housing_xgb.get_booster()
 
 
 pred = optimal_params.predict(X_test)                   
-rmse = np.sqrt(MSE(y_test, pred)) 
+#rmse = np.sqrt(MSE(y_test, pred)) 
+rmse2=mean_squared_log_error(y_test, pred)
+rmse=np.sqrt(MSE(np.log(y_test+1), np.log(pred+1))) 
 print("RMSE : % f" %(rmse)) 
    
 rss = sum((y_test -pred)**2)
