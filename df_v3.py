@@ -280,7 +280,7 @@ print("RMSE : % f" %(rmse))
 # grid search manually
 from sklearn.model_selection import ParameterGrid
 
-
+XjEvr~x7cq
 param_grid = { 
       'max_depth': [3,4,6],
       'learning_rate': [0.0001,0.001,0.01,0.1],
